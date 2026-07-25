@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% block header_title %}รายงานการเข้า-ออกงาน{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Header & Filter Form -->
+    <div class="glass-panel p-6 rounded-2xl">
+        <form method="GET" action="/reports" class="flex flex-wrap items-end justify-between gap-4">
+            <div>
+                <h2 class="text-xl font-bold text-slate-800 mb-1">เลือกช่วงเวลาเพื่อดูรายงาน</h2>
+                <p class="text-sm text-slate-500">เลือกวันที่เริ่มต้นและสิ้นสุดเพื่อกรองข้อมูลการเข้า-ออกงานของพนักงาน</p>
+            </div>
+            
+            <div class="flex flex-wrap items-center gap-3">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">ตั้งแต่วันที่ (Start Date)</label>
+                    <input type="date" name="start_date" value="{{ start_date }}" class="bg-white border border-slate-300 text-slate-700 rounded-xl px-3.5 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none shadow-sm">
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">ถึงวันที่ (End Date)</label>
+                    <input type="date" name="end_date" value="{{ end_date }}" class="bg-white border border-slate-300 text-slate-700 rounded-xl px-3.5 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none shadow-sm">
+                </div>
+                
+                <div class="flex items-center space-x-2 pt-5">
+                    <button type="submit" class="bg-primary hover:bg-indigo-700 text-white font-medium px-4 py-2 rounded-xl shadow-md shadow-primary/30 transition-all flex items-center text-sm">
+                        <i class="ph ph-funnel text-lg mr-1.5"></i> กรองข้อมูล
+                    </button>
+                    
+                    <a href="/reports" class="bg-slate-100 hover:bg-slate-200 text-slate-600 font-medium px-3.5 py-2 rounded-xl transition-all text-sm">
+                        ล้างค่า
+                    </a>
+                    
+                    <a href="/export/excel?start_date={{ start_date }}&end_date={{ end_date }}" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-4 py-2 rounded-xl shadow-md shadow-emerald-600/30 transition-all flex items-center text-sm">
+                        <i class="ph ph-file-xls text-lg mr-1.5"></i> ส่งออก Excel
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Summary Stats Bar -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="glass-panel p-5 rounded-2xl flex items-center justify-between">
+            <div>
+                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">จำนวนรายการทั้งหมด</p>
+                <p class="text-2xl font-bold text-slate-800 mt-1">{{ attendances|length }} <span class="text-sm font-normal text-slate-500">รายการ</span></p>
+            </div>
+            <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-2xl">
+                <i class="ph ph-list-numbers"></i>
+            </div>
+        </div>
+
+        <div class="glass-panel p-5 rounded-2xl flex items-center justify-between">
+            <div>
+                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">ช่วงวันที่แสดง</p>
+                <p class="text-sm font-bold text-slate-800 mt-1">
+                    {% if start_date and end_date %}
+                        {{ start_date }} ถึง {{ end_date }}
+                    {% elif start_date %}
+                        ตั้งแต่ {{ start_date }}
+                    {% elif end_date %}
+                        ถึง {{ end_date }}
+                    {% else %}
+                        ข้อมูลทั้งหมดทุกช่วงเวลา
+                    {% endif %}
+                </p>
+            </div>
+            <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-2xl">
+                <i class="ph ph-calendar"></i>
+            </div>
+        </div>
+
+        <div class="glass-panel p-5 rounded-2xl flex items-center justify-between">
+            <div>
+                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">ดาวน์โหลดรายงาน</p>
+                <p class="text-sm font-medium text-emerald-600 mt-1">พร้อมส่งออกไฟล์ Excel (.CSV)</p>
+            </div>
+            <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-2xl">
+                <i class="ph ph-download"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attendance Records Table -->
+    <div class="glass-panel rounded-2xl overflow-hidden shadow-sm">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-slate-50/50 text-slate-500 text-sm border-b border-slate-100">
+                        <th class="px-6 py-4 font-medium">รูปโปรไฟล์</th>
+                        <th class="px-6 py-4 font-medium">รหัสพนักงาน</th>
+                        <th class="px-6 py-4 font-medium">ชื่อ-นามสกุล</th>
+                        <th class="px-6 py-4 font-medium">แผนก</th>
+                        <th class="px-6 py-4 font-medium">วัน-เวลาที่สแกน</th>
+                        <th class="px-6 py-4 font-medium">สถานะ</th>
+                        <th class="px-6 py-4 font-medium">รูปแบบสแกน</th>
+                    </tr>
+                </thead>
+                <tbody class="text-sm">
+                    {% if attendances %}
+                        {% for log in attendances %}
+                        <tr class="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
+                            <td class="px-6 py-3">
+                                {% if log.employee and log.employee.avatar_url %}
+                                    <img src="{{ log.employee.avatar_url }}" alt="{{ log.employee.name }}" class="w-9 h-9 rounded-full object-cover border border-slate-200">
+                                {% else %}
+                                    <div class="w-9 h-9 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center font-bold text-xs">
+                                        <i class="ph ph-user text-lg"></i>
+                                    </div>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 font-bold text-slate-700">{{ log.employee_pin }}</td>
+                            <td class="px-6 py-4 font-medium text-slate-800">
+                                {% if log.employee %}
+                                    {{ log.employee.name }}
+                                {% else %}
+                                    <span class="text-slate-400 italic">ไม่พบข้อมูล ({{ log.employee_pin }})</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 text-slate-600">
+                                {{ log.employee.department if (log.employee and log.employee.department) else '-' }}
+                            </td>
+                            <td class="px-6 py-4 text-slate-600 font-mono">{{ log.timestamp.strftime('%H:%M:%S %d/%m/%Y') }}</td>
+                            <td class="px-6 py-4">
+                                {% if log.computed_status == 0 or log.in_out_state == 0 %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">🟢 เข้างานแล้ว</span>
+                                {% elif log.computed_status == 2 or log.in_out_state == 2 %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">🟡 เข้างานสาย</span>
+                                {% else %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">🔴 เลิกงานแล้ว</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 text-slate-500">
+                                {% if log.verify_mode == 15 %}
+                                    <span class="inline-flex items-center text-xs text-indigo-700 bg-indigo-50 px-2 py-1 rounded-md"><i class="ph ph-scan text-base mr-1"></i> สแกนใบหน้า</span>
+                                {% elif log.verify_mode == 1 %}
+                                    <span class="inline-flex items-center text-xs text-amber-700 bg-amber-50 px-2 py-1 rounded-md"><i class="ph ph-fingerprint text-base mr-1"></i> สแกนนิ้ว</span>
+                                {% else %}
+                                    {{ log.verify_mode }}
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="7" class="px-6 py-12 text-center text-slate-500">
+                                <div class="flex flex-col items-center justify-center">
+                                    <i class="ph ph-magnifying-glass text-4xl mb-2 text-slate-300"></i>
+                                    <p class="font-medium text-slate-600">ไม่พบข้อมูลในช่วงเวลาที่เลือก</p>
+                                    <p class="text-xs mt-1 text-slate-400">ลองเลือกช่วงเวลาใหม่อีกครั้ง</p>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+
+{% block header_title %}ภาพรวมระบบ (Dashboard){% endblock %}
+
+{% block content %}
+<!-- Stats Cards -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+    <div class="glass-panel p-6 rounded-2xl relative overflow-hidden group">
+        <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+            <i class="ph ph-users text-6xl text-primary"></i>
+        </div>
+        <h3 class="text-slate-500 font-medium text-sm mb-1">พนักงานทั้งหมด</h3>
+        <p class="text-3xl font-bold text-slate-800"><span id="stat-total-emp">{{ employees|length }}</span> <span class="text-sm font-normal text-slate-500">คน</span></p>
+    </div>
+    
+    <div class="glass-panel p-6 rounded-2xl relative overflow-hidden group">
+        <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+            <i class="ph ph-fingerprint text-6xl text-green-500"></i>
+        </div>
+        <h3 class="text-slate-500 font-medium text-sm mb-1">สแกนเข้าวันนี้</h3>
+        <p class="text-3xl font-bold text-slate-800"><span id="stat-scanned-today">-</span> <span class="text-sm font-normal text-slate-500">คน</span></p>
+        <div class="mt-2 text-xs text-green-600 flex items-center">
+            <i class="ph ph-trend-up mr-1"></i> <span id="stat-scan-percent">0</span>% ของพนักงานทั้งหมด
+        </div>
+    </div>
+    
+    <div class="glass-panel p-6 rounded-2xl relative overflow-hidden group">
+        <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+            <i class="ph ph-clock text-6xl text-orange-500"></i>
+        </div>
+        <h3 class="text-slate-500 font-medium text-sm mb-1">ระบบดึงข้อมูล Real-time</h3>
+        <p class="text-xl font-bold text-slate-800 flex items-center mt-2">
+            <span class="w-3 h-3 rounded-full bg-blue-500 mr-2 animate-ping"></span>
+            ทำงานปกติ
+        </p>
+    </div>
+
+    <div class="glass-panel p-6 rounded-2xl relative overflow-hidden group">
+        <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+            <i class="ph ph-hard-drives text-6xl text-blue-500"></i>
+        </div>
+        <h3 class="text-slate-500 font-medium text-sm mb-1">สถานะเครื่องสแกน</h3>
+        <p id="stat-device-status" class="text-xl font-bold text-green-600 flex items-center mt-2">
+            <span class="w-3 h-3 rounded-full bg-green-500 mr-2 animate-pulse"></span>
+            ออนไลน์
+        </p>
+    </div>
+</div>
+
+<!-- Main Table -->
+<div class="glass-panel rounded-2xl overflow-hidden shadow-sm">
+    <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white/50">
+        <div class="flex items-center space-x-3">
+            <h2 class="text-lg font-semibold text-slate-800">รายการสแกนล่าสุด (Real-time Live Feed)</h2>
+            <span class="px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-700 font-medium animate-pulse">Live</span>
+        </div>
+        <div class="flex items-center space-x-2">
+            <a href="/export/excel" class="text-sm bg-green-600 hover:bg-green-700 text-white px-3.5 py-1.5 rounded-lg shadow-sm transition-all font-medium flex items-center">
+                <i class="ph ph-file-xls mr-1.5 text-lg"></i> ส่งออก Excel
+            </a>
+            <button onclick="fetchLiveData()" class="text-sm bg-primary/10 text-primary hover:bg-primary/20 px-3 py-1.5 rounded-lg transition-colors font-medium flex items-center">
+                <i class="ph ph-arrows-clockwise mr-1"></i> ดึงข้อมูลทันที
+            </button>
+        </div>
+    </div>
+    
+    <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="bg-slate-50/50 text-slate-500 text-sm border-b border-slate-100">
+                    <th class="px-6 py-4 font-medium">รหัสพนักงาน</th>
+                    <th class="px-6 py-4 font-medium">ชื่อ-สกุล</th>
+                    <th class="px-6 py-4 font-medium">เวลาที่สแกน</th>
+                    <th class="px-6 py-4 font-medium">สถานะ</th>
+                    <th class="px-6 py-4 font-medium">รูปแบบสแกน</th>
+                </tr>
+            </thead>
+            <tbody id="attendance-tbody" class="text-sm">
+                {% if attendances %}
+                    {% for log in attendances %}
+                    <tr class="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
+                        <td class="px-6 py-4 font-medium text-slate-700">{{ log.employee_pin }}</td>
+                        <td class="px-6 py-4">
+                            {% if log.employee %}
+                                {{ log.employee.name }}
+                            {% else %}
+                                <span class="text-slate-400 italic">ไม่พบข้อมูล ({{ log.employee_pin }})</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-slate-600">{{ log.timestamp.strftime('%H:%M:%S %d/%m/%Y') }}</td>
+                        <td class="px-6 py-4">
+                            {% if log.computed_status == 0 or log.in_out_state == 0 %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">🟢 เข้างานแล้ว</span>
+                            {% elif log.computed_status == 2 or log.in_out_state == 2 %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">🟡 เข้างานสาย</span>
+                            {% else %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">🔴 เลิกงานแล้ว</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-slate-500">
+                            {% if log.verify_mode == 15 %}
+                                <i class="ph ph-scan text-lg" title="สแกนใบหน้า"></i>
+                            {% elif log.verify_mode == 1 %}
+                                <i class="ph ph-fingerprint text-lg" title="สแกนนิ้ว"></i>
+                            {% else %}
+                                {{ log.verify_mode }}
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-12 text-center text-slate-500">
+                            <div class="flex flex-col items-center justify-center">
+                                <i class="ph ph-clock-counter-clockwise text-4xl mb-2 text-slate-300"></i>
+                                <p>ยังไม่มีข้อมูลการสแกนในระบบ</p>
+                                <p class="text-xs mt-1 text-slate-400">ข้อมูลจะแสดงอัตโนมัติเมื่อพนักงานสแกนหน้า</p>
+                            </div>
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    async function fetchLiveData() {
+        try {
+            const res = await fetch('/api/live_data');
+            if (!res.ok) return;
+            const data = await res.json();
+            
+            // Update stats
+            if (data.stats) {
+                document.getElementById('stat-total-emp').innerText = data.stats.total_employees;
+                document.getElementById('stat-scanned-today').innerText = data.stats.scanned_today;
+                document.getElementById('stat-scan-percent').innerText = data.stats.scan_percent;
+                
+                const devElem = document.getElementById('stat-device-status');
+                if (data.stats.is_online) {
+                    devElem.className = "text-xl font-bold text-green-600 flex items-center mt-2";
+                    devElem.innerHTML = '<span class="w-3 h-3 rounded-full bg-green-500 mr-2 animate-pulse"></span>ออนไลน์';
+                } else {
+                    devElem.className = "text-xl font-bold text-slate-400 flex items-center mt-2";
+                    devElem.innerHTML = '<span class="w-3 h-3 rounded-full bg-slate-300 mr-2"></span>ออฟไลน์ (ไม่ได้เชื่อมต่อ)';
+                }
+            }
+            
+            // Update attendance table
+            const tbody = document.getElementById('attendance-tbody');
+            if (data.attendances && data.attendances.length > 0) {
+                let html = '';
+                data.attendances.forEach(log => {
+                    let inOutTag = '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">🟢 เข้างานแล้ว</span>';
+                    if (log.in_out === 2) {
+                        inOutTag = '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">🟡 เข้างานสาย</span>';
+                    } else if (log.in_out === 1) {
+                        inOutTag = '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">🔴 เลิกงานแล้ว</span>';
+                    }
+                    
+                    let verifyIcon = log.verify_mode;
+                    if (log.verify_mode === 15) {
+                        verifyIcon = '<i class="ph ph-scan text-lg" title="สแกนใบหน้า"></i>';
+                    } else if (log.verify_mode === 1) {
+                        verifyIcon = '<i class="ph ph-fingerprint text-lg" title="สแกนนิ้ว"></i>';
+                    }
+                    
+                    let avatarTag = `<div class="w-8 h-8 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center font-bold text-xs mr-3 inline-flex"><i class="ph ph-user"></i></div>`;
+                    if (log.avatar_url) {
+                        avatarTag = `<img src="${log.avatar_url}" class="w-8 h-8 rounded-full object-cover border border-slate-200 mr-3 inline-block">`;
+                    }
+                    
+                    html += `
+                    <tr class="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
+                        <td class="px-6 py-4 font-medium text-slate-700">${log.pin}</td>
+                        <td class="px-6 py-4 flex items-center">${avatarTag}<span class="font-medium text-slate-800">${log.name}</span></td>
+                        <td class="px-6 py-4 text-slate-600">${log.time}</td>
+                        <td class="px-6 py-4">${inOutTag}</td>
+                        <td class="px-6 py-4 text-slate-500">${verifyIcon}</td>
+                    </tr>`;
+                });
+                tbody.innerHTML = html;
+            }
+        } catch (err) {
+            console.error("Live fetch error:", err);
+        }
+    }
+
+    // Auto poll every 3 seconds
+    setInterval(fetchLiveData, 3000);
+    fetchLiveData();
+</script>
+{% endblock %}

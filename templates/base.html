@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZKTeco HR Dashboard</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- Custom Theme Configuration -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4f46e5',
+                        secondary: '#1e293b',
+                        accent: '#22d3ee',
+                        background: '#f8fafc',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'Sarabun', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', 'Sarabun', sans-serif; background-color: #f8fafc; }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        }
+        .fade-in { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased h-screen flex overflow-hidden">
+    
+    <!-- Sidebar -->
+    <aside class="w-64 bg-secondary text-white flex flex-col shadow-2xl z-20">
+        <div class="h-16 flex items-center px-6 border-b border-slate-700">
+            <i class="ph ph-fingerprint text-accent text-3xl mr-2"></i>
+            <span class="text-lg font-bold tracking-wider">ZK<span class="text-accent">Connect</span></span>
+        </div>
+        <nav class="flex-1 px-4 py-6 space-y-2">
+            <a href="/" class="flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-white/10 {% if request.url.path == '/' %}bg-primary shadow-lg shadow-primary/30{% endif %}">
+                <i class="ph ph-squares-four text-xl mr-3"></i>
+                <span class="font-medium">Dashboard</span>
+            </a>
+            <a href="/employees" class="flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-white/10 {% if request.url.path == '/employees' %}bg-primary shadow-lg shadow-primary/30{% endif %}">
+                <i class="ph ph-users text-xl mr-3"></i>
+                <span class="font-medium">พนักงาน</span>
+            </a>
+            <a href="/reports" class="flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-white/10 {% if request.url.path == '/reports' %}bg-primary shadow-lg shadow-primary/30{% endif %}">
+                <i class="ph ph-file-text text-xl mr-3"></i>
+                <span class="font-medium">รายงาน</span>
+            </a>
+            <a href="#" class="flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-white/10">
+                <i class="ph ph-gear text-xl mr-3"></i>
+                <span class="font-medium">ตั้งค่าระบบ</span>
+            </a>
+        </nav>
+        <div class="p-4 border-t border-slate-700">
+            <div class="flex items-center px-4 py-3 rounded-xl bg-white/5">
+                <div class="w-8 h-8 rounded-full bg-accent flex items-center justify-center text-secondary font-bold mr-3">A</div>
+                <div>
+                    <div class="text-sm font-semibold">ผู้ดูแลระบบ</div>
+                    <div class="text-xs text-slate-400">Admin Role</div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col h-screen overflow-hidden bg-background relative">
+        <!-- Background Decoration -->
+        <div class="absolute top-0 right-0 -mr-32 -mt-32 w-96 h-96 rounded-full bg-primary/5 blur-3xl pointer-events-none"></div>
+        <div class="absolute bottom-0 left-0 -ml-32 -mb-32 w-96 h-96 rounded-full bg-accent/5 blur-3xl pointer-events-none"></div>
+        
+        <!-- Header -->
+        <header class="h-16 flex items-center justify-between px-8 bg-white/80 backdrop-blur-md border-b border-slate-200 z-10">
+            <h1 class="text-xl font-bold text-slate-800">{% block header_title %}Dashboard{% endblock %}</h1>
+            <div class="flex items-center space-x-4">
+                <button class="p-2 rounded-full hover:bg-slate-100 transition-colors text-slate-500 hover:text-primary">
+                    <i class="ph ph-bell text-xl"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Content Area -->
+        <div class="flex-1 overflow-auto p-8 z-10">
+            <div class="max-w-7xl mx-auto fade-in">
+                {% block content %}{% endblock %}
+            </div>
+        </div>
+    </main>
+
+</body>
+</html>
